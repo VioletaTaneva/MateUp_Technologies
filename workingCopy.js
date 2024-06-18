@@ -1,9 +1,49 @@
-import React, { Component } from "react";
-import { StyleSheet, Text, View, Button, TextInput, Modal, TouchableOpacity, ScrollView } from "react-native";
-import CalendarPicker from "react-native-calendar-picker";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { StatusBar } from "expo-status-bar";
+import { StyleSheet, Text, View } from "react-native";
+import MateUpCalendar from './MateUpCalendar';
+import QRCode from 'react-native-qrcode-svg';
 
-// Month mapping
+
+export default function App() {
+  return (
+    <View style={styles.container}>
+      <StatusBar style="auto" />
+     {/* <Text>Potatoland</Text> */}
+       {/*<QRCode value='https://www.basic-fit.com/nl-be/home' 
+     />*/}
+
+     <MateUpCalendar />
+      
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { Component } from "react";
+import {StyleSheet,Text, View, Button, TextInput, Modal, TouchableOpacity, ScrollView,
+} from "react-native";
+import CalendarPicker from "react-native-calendar-picker";
+
 const monthMapping = {
   Jan: "January",
   Feb: "February",
@@ -19,20 +59,22 @@ const monthMapping = {
   Dec: "December"
 };
 
-export default class MateUpCalendar extends Component {
 
+export default class MateUpCalendar extends Component {
+  // initialize state of the calendar
   constructor(props) {
     super(props);
     this.state = {
       selectedStartDate: null,
       currentlySelectedDate: [],
+      // Used to store information about events that match the selected date
       matchedEvents: [],
-      events: [],
-      modalVisible: false,
+
+      //dummy data
       events: [
         {
           date: 15,
-          month: "June",
+          month: "May",
           year: 2024,
           startTime: "10:00 AM",
           endTime: "11:00 AM",
@@ -48,7 +90,18 @@ export default class MateUpCalendar extends Component {
           title: "Conference Call",
           description: "Call with stakeholders to review project milestones.",
         },
+        {
+          date: 5,
+          month: "May",
+          year: 2024,
+          startTime: "2:00 PM",
+          endTime: "3:00 PM",
+          title: "Training Session",
+          description: "Training session for new software release.",
+        },
       ],
+      //make the event details not visible as a base state
+      modalVisible: false,
       newEvent: {
         startTime: "",
         endTime: "",
@@ -58,51 +111,49 @@ export default class MateUpCalendar extends Component {
     };
   }
 
-  componentDidMount() {
-    this.loadEvents();
-  }
-
+  //deals with the date selection
   onDateChange = (date) => {
     const currentlySelectedDate = date ? date.toString().split(" ") : [];
+
+    //tells the terminal what to show on press
     const selectedDateDetails = {
       dayOfWeek: currentlySelectedDate[0] || "",
       month: currentlySelectedDate[1] || "",
       date: currentlySelectedDate[2] || "",
       year: currentlySelectedDate[3] || "",
     };
-  
-    this.updateMatchedEvents(selectedDateDetails);
-  
+    console.log(selectedDateDetails);
+
+
+    //find the events that match the selected date
+    const matchedEvents = this.findEvents(selectedDateDetails);
+
+    console.log(matchedEvents);
+
+    //checks if there are events and displays them if found
     this.setState({
       selectedStartDate: date,
       currentlySelectedDate,
+      matchedEvents,
       selectedDateDetails,
     });
+  };
 
-    ()=>{
-      this.loadEvents();
-    }
-  };
-  
-  // New method to update matched events
-  updateMatchedEvents = (selectedDateDetails) => {
-    const matchedEvents = this.findEvents(selectedDateDetails);
-    this.setState({ matchedEvents });
-  };
-  
 
-  findEvents = (selectedDateDetails) => {
-    const fullMonthName = monthMapping[selectedDateDetails.month];
-    const filteredEvents = this.state.events.filter(
-      (event) =>
-        event.date.toString() === selectedDateDetails.date &&
-        event.month.toLowerCase() === fullMonthName.toLowerCase() &&
-        event.year.toString() === selectedDateDetails.year
-    );
-    return [...filteredEvents];
-  };
-  
-  addEvent = async () => {
+//finds the events that match the selected date
+findEvents = (selectedDateDetails) => {
+  const fullMonthName = monthMapping[selectedDateDetails.month];
+  return this.state.events.filter(
+    (event) =>
+      event.date.toString() === selectedDateDetails.date &&
+      event.month.toLowerCase() === fullMonthName.toLowerCase() &&
+      event.year.toString() === selectedDateDetails.year
+  );
+};
+
+
+  //adds an event
+  addEvent = () => {
     const { selectedDateDetails, newEvent } = this.state;
     const newEventDetails = {
       ...newEvent,
@@ -111,65 +162,22 @@ export default class MateUpCalendar extends Component {
       year: parseInt(selectedDateDetails.year),
     };
 
-    this.setState(
-      (prevState) => ({
-        events: [...prevState.events, newEventDetails],
-        modalVisible: false,
-        newEvent: { startTime: "", endTime: "", title: "", description: "" },
-        matchedEvents: [...prevState.matchedEvents, newEventDetails],
-      }),
-      async () => {
-        await this.saveEvents(); 
-      }
-    );
+    this.setState((prevState) => ({
+      events: [...prevState.events, newEventDetails],
+      modalVisible: false,
+      newEvent: { startTime: "", endTime: "", title: "", description: "" },
+      matchedEvents: [...prevState.matchedEvents, newEventDetails], // Add the new event to matched events
+    }));
   };
-
-  saveEvents = async () => {
-    try {
-      await AsyncStorage.setItem('events', JSON.stringify(this.state.events));
-      console.log('Events saved successfully', this.state.events);
-    } catch (error) {
-      console.error('Failed to save events', error);
-    }
-  };
-  
-  
-  loadEvents = async () => {
-    try {
-      const { selectedDateDetails } = this.state;
-  
-      // Ensure we have valid selected date details before proceeding
-      if (!selectedDateDetails || !selectedDateDetails.date || !selectedDateDetails.month || !selectedDateDetails.year) {
-        console.log('No valid date selected');
-        return;
-      }
-  
-      const storedEvents = await AsyncStorage.getItem('events');
-      console.log('Stored events', storedEvents);
-      if (storedEvents !== null) {
-        const parsedEvents = JSON.parse(storedEvents);
-        // Filter events by the selected date
-        const matchedEvents = parsedEvents.filter((event) => {
-          const fullMonthName = monthMapping[selectedDateDetails.month];
-          return (
-            event.date.toString() === selectedDateDetails.date &&
-            event.month.toLowerCase() === fullMonthName.toLowerCase() &&
-            event.year.toString() === selectedDateDetails.year
-          );
-        });
-        // Update the state with matched events
-        this.setState({ events: parsedEvents, matchedEvents });
-    }
-  } catch (error) {
-    console.error('Failed to load events', error);
-  }
-};
-  
-  
-  
 
   render() {
-    const { selectedStartDate, matchedEvents, modalVisible, newEvent } = this.state;
+    const {
+      selectedStartDate,
+      selectedDateDetails,
+      matchedEvents,
+      modalVisible,
+      newEvent,
+    } = this.state;
 
     return (
       <ScrollView>
@@ -183,11 +191,23 @@ export default class MateUpCalendar extends Component {
             calendarStyle={{ backgroundColor: "black" }}
             dayTextStyle={{ color: "white" }}
             textStyle={{ color: "white" }}
-          />
+          /> 
 
           <Text style={styles.callToAction}>
-            See what your buddies are crushing today!
+            {" "}
+            See what your buddies are crushing today!{" "}
           </Text>
+          <View/>
+        {/*  
+          {selectedDateDetails ? (
+            <View style={styles.selectedDateContainer}>
+              <Text style={styles.selectedDateText}>
+                {selectedDateDetails
+                  ? `${selectedDateDetails.date}/${selectedDateDetails.month}/${selectedDateDetails.year} - Selected`
+                  : "No date selected"}
+              </Text>
+            </View>
+          ) : null} */}
 
           <View style={styles.eventContainer}>
             {matchedEvents.length > 0 ? (
@@ -207,14 +227,16 @@ export default class MateUpCalendar extends Component {
             )}
           </View>
 
+          {/* Add Workout Button */}
           <TouchableOpacity
             style={styles.addWorkoutButton}
             onPress={() => this.setState({ modalVisible: true })}
-            disabled={!selectedStartDate}
+            disabled={!selectedStartDate} // Disable button if no date is selected
           >
             <Text style={styles.addWorkoutButtonText}>Add Workout</Text>
           </TouchableOpacity>
 
+          {/* Add Event Modal aka displays the input fields */}
           <Modal
             visible={modalVisible}
             transparent={true}
@@ -234,6 +256,7 @@ export default class MateUpCalendar extends Component {
                     })
                   }
                 />
+
                 <TextInput
                   style={styles.input}
                   placeholder="End Time"
@@ -244,6 +267,7 @@ export default class MateUpCalendar extends Component {
                     })
                   }
                 />
+
                 <TextInput
                   style={styles.input}
                   placeholder="Title"
@@ -262,7 +286,7 @@ export default class MateUpCalendar extends Component {
                     })
                   }
                 />
-                <Button title="Confirm" onPress={this.addEvent} />
+                <Button title="Conform" onPress={this.addEvent} />
                 <Button
                   title="Cancel"
                   onPress={() => this.setState({ modalVisible: false })}
@@ -276,7 +300,6 @@ export default class MateUpCalendar extends Component {
   }
 }
 
-// Styles for the components
 const styles = StyleSheet.create({
   calendarStyle: {
     flex: 1,
@@ -293,7 +316,7 @@ const styles = StyleSheet.create({
   },
 
   callToAction: {
-    fontSize: 24, 
+    fontSize: 30, 
     fontWeight: "bold",
     color: "#FF8047",
     marginLeft: 20,
@@ -308,20 +331,19 @@ const styles = StyleSheet.create({
   },
   event: {
     marginBottom: 15,
-    padding: 10,
   },
   eventTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
     color: "balck",
   },
   eventTime: {
-    fontSize: 14,
+    fontSize: 18,
     marginTop: 5,
     color: "black",
   },
   eventDescription: {
-    fontSize: 14,
+    fontSize: 16,
     marginTop: 5,
     color: "black",
   },
@@ -334,9 +356,9 @@ const styles = StyleSheet.create({
   },
 
   addWorkoutButton: {
-    position: 'absolute',
-    bottom: 10,
-    right: 20,
+    position: 'fixed',
+    top: "90%",
+    right: 15,
     paddingHorizontal: 20,
     paddingVertical: 10,
     backgroundColor: "#333333",
@@ -345,6 +367,8 @@ const styles = StyleSheet.create({
     borderColor: "#709872",
     justifyContent: "center",
     alignItems: "center",
+    alignSelf: "flex-start",
+    maxWidth: "fit-content",
   },
   addWorkoutButtonText: {
     color: "#FE7000",
