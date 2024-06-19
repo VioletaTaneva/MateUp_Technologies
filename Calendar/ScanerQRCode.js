@@ -1,12 +1,15 @@
+//i couldn't test this one so i don't know if it works 
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 
+ // State variables to manage camera permission, scan status, and scanned data
 const ScannerQRCode = () => {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
   const [text, setText] = useState('Not yet scanned');
 
+   // Function to request camera permission
   const askForCameraPermission = () => {
     (async () => {
       const { status } = await BarCodeScanner.requestPermissionsAsync();
@@ -14,16 +17,19 @@ const ScannerQRCode = () => {
     })();
   };
 
+   // Effect hook to request camera permission on component mount
   useEffect(() => {
     askForCameraPermission();
   }, []);
 
+    // Function to handle barcode scan
   const handleBarCodeScanned = ({ type, data }) => {
     setScanned(true);
     setText(data);
     console.log('Type: ' + type + '\nData: ' + data);
   };
 
+    // Function to handle barcode scan
   if (hasPermission === null) {
     return (
       <View style={styles.container}>
@@ -31,6 +37,7 @@ const ScannerQRCode = () => {
       </View>
     );
   }
+    // Render if camera permission is denied
   if (hasPermission === false) {
     return (
       <View style={styles.container}>

@@ -1,4 +1,3 @@
-// App.js
 import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -25,7 +24,6 @@ export default function App() {
         <Stack.Screen name="QRGenerator" component={QRGenerator} /> 
         <Stack.Screen name="ScannerQRcode" component={ScannerQRcode} />
         <Stack.Screen name="WorkoutForm" component={WorkoutForm}/>
-
       </Stack.Navigator>
 
     </NavigationContainer>

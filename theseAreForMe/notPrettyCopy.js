@@ -1,20 +1,18 @@
+//MateUpCalendar
 import React, { Component } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from "react-native";
 import CalendarPicker from "react-native-calendar-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default class MateUpCalendar extends Component {
-
-  //sets state of the calendar
   constructor(props) {
     super(props);
     this.state = {
       selectedStartDate: null,
       currentlySelectedDate: new Date(),
       matchedEvents: [],
-      events: [ // Dummy event data
+      events: [
         {
-          id: 1,
           date: new Date(2024, 5, 15), // June 15, 2024
           startTime: "10:00 AM",
           endTime: "11:00 AM",
@@ -22,7 +20,6 @@ export default class MateUpCalendar extends Component {
           description: " ",
         },
         {
-          id: 2,
           date: new Date(2024, 7, 20), // August 20, 2024
           startTime: "12:00 PM",
           endTime: "1:00 PM",
@@ -33,24 +30,21 @@ export default class MateUpCalendar extends Component {
     };
   }
 
-  // Checks to see if there are any added events in AsyncStorage. If there are it displayes them
   componentDidMount() {
     this.loadEvents();
   }
- //deals with the change of date
+
   onDateChange = (date) => {
     const selectedDate = date ? new Date(date) : new Date();
     this.updateMatchedEvents(selectedDate);
     this.setState({ selectedStartDate: date, currentlySelectedDate: selectedDate });
   };
 
- // It checks and changes the display and the events based on the selected date
   updateMatchedEvents = (selectedDate) => {
     const matchedEvents = this.findEvents(selectedDate);
     this.setState({ matchedEvents });
   };
 
-  //It checks if there are any events happening on a specific date.
   findEvents = (selectedDate) => {
     return this.state.events.filter(
       (event) => {
@@ -60,7 +54,6 @@ export default class MateUpCalendar extends Component {
     );
   };
 
-  //saves the events in AsyncStorage
   saveEvents = async () => {
     try {
       await AsyncStorage.setItem('events', JSON.stringify(this.state.events));
@@ -69,22 +62,15 @@ export default class MateUpCalendar extends Component {
     }
   };
 
-  //loads the events from AsyncStorage
   loadEvents = async () => {
     try {
-      // Retrieves the currently selected date from the component's state
       const { currentlySelectedDate } = this.state;
-      // Retrieves stored events from AsyncStorage using the key 'events'
       const storedEvents = await AsyncStorage.getItem('events');
-      // Convert the stored events to an array of objects
       if (storedEvents !== null) {
         const parsedEvents = JSON.parse(storedEvents).map(event => ({
           ...event,
-          // Converts the 'date' property of each event from string to Date object
           date: new Date(event.date)
         }));
-        // Filters events to find those matching the currently selected date
-        // and stores them in the component's state
         const matchedEvents = parsedEvents.filter(
           (event) => new Date(event.date).toDateString() === currentlySelectedDate.toDateString()
         );
@@ -95,59 +81,25 @@ export default class MateUpCalendar extends Component {
     }
   };
 
-    // Create a new event object with an incremented (unique) ID and converted date
   addNewEvent = (newEventDetails) => {
     const newEventWithDateObject = {
-      id: this.state.events.length + 1, // Incremented ID based on existing events
-      ...newEventDetails, // Spread new event details (title, description, etc.)
-      date: new Date(newEventDetails.date) // Convert date string to Date object because js works with objects and async storage only works with strings
+      ...newEventDetails,
+      date: new Date(newEventDetails.date)
     };
-
-    // Update component state with the new event
     this.setState(
       (prevState) => ({
-        events: [...prevState.events, newEventWithDateObject], // Add new event to events array
-        matchedEvents: [...prevState.matchedEvents, newEventWithDateObject], // Add new event to events array
+        events: [...prevState.events, newEventWithDateObject],
+        matchedEvents: [...prevState.matchedEvents, newEventWithDateObject],
       }),
       async () => {
-        await this.saveEvents(); // After state update, save events to AsyncStorage
+        await this.saveEvents();
       }
     );
-  };
-
-    // Filter out the event with the specified eventId from events array
-  deleteEvent = (eventId) => {
-    const updatedEvents = this.state.events.filter(event => event.id !== eventId);
-
-      // Update component state with the new events array
-    this.setState({ events: updatedEvents, matchedEvents: updatedEvents.filter(event => {
-      const eventDate = new Date(event.date);
-      return eventDate.toDateString() === this.state.currentlySelectedDate.toDateString();
-    }) }, async () => {
-      await this.saveEvents();
-    });
   };
 
   render() {
     const { selectedStartDate, matchedEvents } = this.state;
     const { navigation } = this.props;
-
-
-  // Function to handle deletion of an event
-    const handleDelete = (eventId) => {
-      Alert.alert(
-        "Delete Event",
-        "Are you sure you want to delete this event?",
-        [
-          {
-            text: "Cancel",
-            style: "cancel"
-          },
-          { text: "Delete", onPress: () => this.deleteEvent(eventId) }
-        ],
-        { cancelable: true }
-      );
-    };
 
     return (
       <ScrollView>
@@ -166,15 +118,11 @@ export default class MateUpCalendar extends Component {
           <View style={styles.eventContainer}>
             {matchedEvents.length > 0 ? (
               matchedEvents.map((event, index) => (
-                <TouchableOpacity
-                  key={event.id}
-                  style={styles.event}
-                  onLongPress={() => handleDelete(event.id)}
-                >
+                <View key={index} style={styles.event}>
                   <Text style={styles.eventTitle}>{event.title}</Text>
                   <Text style={styles.eventTime}>{event.startTime} - {event.endTime}</Text>
                   <Text style={styles.eventDescription}>{event.description}</Text>
-                </TouchableOpacity>
+                </View>
               ))
             ) : (
               <Text style={styles.noEventText}>No events on this day</Text>
@@ -220,7 +168,7 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "black",
+    color: "balck",
   },
   eventTime: {
     fontSize: 14,
@@ -257,3 +205,154 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+
+
+
+
+
+//Form
+
+import React, { useState } from 'react';
+import { View, ScrollView, Text, TextInput, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
+const WorkoutForm = ({ route, navigation }) => {
+  const params = route && route.params ? route.params : {};
+  const selectedDate = params.selectedDate ? new Date(params.selectedDate) : new Date();
+
+  const [startTime, setStartTime] = useState(new Date(selectedDate));
+  const [endTime, setEndTime] = useState(new Date(selectedDate.getTime() + 60 * 60 * 1000)); // +1 hour
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [privacy, setPrivacy] = useState(true);
+
+  const saveEvent = () => {
+    const newEvent = {
+      date: selectedDate,
+      startTime: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      endTime: endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      title,
+      description,
+      privacy,
+    };
+    if (params.addNewEvent) {
+      params.addNewEvent(newEvent);
+    }
+    navigation.navigate('MateUpCalendar');
+  };
+
+  return (
+    <ScrollView>
+      <View style={styles.container}>
+        {/* Display selected date */}
+        <Text style={styles.label}>Selected Date:</Text>
+        <Text style={styles.dateText}>{selectedDate.toDateString()}</Text>
+        
+        <Text style={styles.label}>Workout Title:</Text>
+        <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Enter title" />
+        
+        <Text style={styles.label}>Description:</Text>
+        <TextInput style={styles.input} value={description} onChangeText={setDescription} placeholder="Enter description" />
+
+        <Text style={styles.label}>Start Time:</Text>
+        {showStartTimePicker && (
+          <DateTimePicker
+            value={startTime}
+            mode="time"
+            display="default"
+            onChange={(event, selectedTime) => {
+              const currentTime = selectedTime || startTime;
+              setShowStartTimePicker(Platform.OS === 'ios');
+              setStartTime(currentTime);
+            }}
+          />
+        )}
+        <TouchableOpacity onPress={() => setShowStartTimePicker(true)}>
+          <Text style={styles.timeText}>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.label}>End Time:</Text>
+        {showEndTimePicker && (
+          <DateTimePicker
+            value={endTime}
+            mode="time"
+            display="default"
+            onChange={(event, selectedTime) => {
+              const currentTime = selectedTime || endTime;
+              setShowEndTimePicker(Platform.OS === 'ios');
+              setEndTime(currentTime);
+            }}
+          />
+        )}
+        <TouchableOpacity onPress={() => setShowEndTimePicker(true)}>
+          <Text style={styles.timeText}>{endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+        </TouchableOpacity>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity onPress={saveEvent} style={styles.saveButton}>
+            <Text style={styles.buttonText}>Save</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.cancelButton}>
+            <Text style={styles.buttonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    backgroundColor: '#333333',
+  },
+  label: {
+    fontSize: 18,
+    color: 'white',
+    marginBottom: 10,
+  },
+  input: {
+    backgroundColor: 'white',
+    padding: 10,
+    marginBottom: 20,
+    borderRadius: 5,
+  },
+  dateText: {
+    color: 'white',
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  timeText: {
+    color: 'white',
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  saveButton: {
+    backgroundColor: '#FE7000',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  cancelButton: {
+    backgroundColor: '#555555',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+});
+
+export default WorkoutForm;
